@@ -2,7 +2,8 @@ import express from 'express'
 import { addspend, deletespend, getspend, getspendbyid, updatespend } from '../controller/spendingController.js'
 
 const spendRouter=express.Router()
-// ss
+// sss
+// s
 spendRouter.post("/addspend",addspend)
 spendRouter.post('/getspend',getspend)
 spendRouter.post('/getspendbyid',getspendbyid)
