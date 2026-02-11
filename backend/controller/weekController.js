@@ -1,61 +1,78 @@
+import { Spending } from "../model/speding.js";
 import { Week } from "../model/week.js";
 
 
-const addweek=async (req, res) => {
+const addweek = async (req, res) => {
     try {
-        const { weekName, totalAmount, userId } = req.body
+        const { weekName, totalAmount, userId } = req.body;
         
         if (!weekName || !totalAmount || !userId) {
             return res.json({
                 success: false,
                 message: "Week name, total amount and user ID are required"
-            })
+            });
         }
 
         const week = await Week.create({
             userId,
             weekName,
             totalAmount
-        })
+        });
 
         return res.json({
             success: true,
             message: "Week created successfully",
             week
-        })
+        });
     } catch (error) {
         return res.json({
             success: false,
             message: error.message
-        })
+        });
     }
 }
 
-
-const getweek=async (req, res) => {
+const getweek = async (req, res) => {
     try {
-        const { userId } = req.body
+        const { userId } = req.body;
         
         if (!userId) {
             return res.json({
                 success: false,
                 message: "User ID is required"
-            })
+            });
         }
 
-        const weeks = await Week.find({ userId }).sort({ createdAt: -1 })
+        const weeks = await Week.find({ userId }).sort({ createdAt: -1 });
+
+        // Get spending totals for all weeks
+        const weeksWithSpending = await Promise.all(
+            weeks.map(async (week) => {
+                const spendings = await Spending.find({ weekId: week._id });
+                const totalSpent = spendings.reduce((sum, spending) => sum + spending.amount, 0);
+                const remaining = week.totalAmount - totalSpent;
+                
+                return {
+                    ...week.toObject(),
+                    totalSpent,
+                    remaining,
+                    progress: week.totalAmount > 0 ? (totalSpent / week.totalAmount) * 100 : 0
+                };
+            })
+        );
 
         return res.json({
             success: true,
-            weeks
-        })
+            weeks: weeksWithSpending
+        });
     } catch (error) {
         return res.json({
             success: false,
             message: error.message
-        })
+        });
     }
 }
+
 
 const getweekbyid=async (req, res) => {
     try {

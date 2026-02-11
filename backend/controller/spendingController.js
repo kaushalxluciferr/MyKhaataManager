@@ -1,90 +1,92 @@
 import { Spending } from "../model/speding.js";
+import { Week } from "../model/week.js";
 
-const addspend=async (req, res) => {
+const addspend = async (req, res) => {
     try {
-        const { weekId, name, amount, userId } = req.body
+        const { weekId, name, amount, userId } = req.body;
         
         if (!weekId || !name || !amount || !userId) {
             return res.json({
                 success: false,
                 message: "Week ID, name, amount and user ID are required"
-            })
+            });
         }
 
         // Check if week belongs to user
-        const week = await Week.findOne({ _id: weekId, userId })
+        const week = await Week.findOne({ _id: weekId, userId });
         
         if (!week) {
             return res.json({
                 success: false,
                 message: "Week not found"
-            })
+            });
         }
 
         const spending = await Spending.create({
             weekId,
             name,
             amount
-        })
+        });
 
         return res.json({
             success: true,
             message: "Spending added successfully",
             spending
-        })
+        });
     } catch (error) {
         return res.json({
             success: false,
             message: error.message
-        })
+        });
     }
-}
+};
 
-
-const getspend= async (req, res) => {
+const getspend = async (req, res) => {
     try {
-        const { weekId, userId } = req.body
+        const { weekId, userId } = req.body;
         
         if (!weekId || !userId) {
             return res.json({
                 success: false,
                 message: "Week ID and User ID are required"
-            })
+            });
         }
 
         // Check if week belongs to user
-        const week = await Week.findOne({ _id: weekId, userId })
+        const week = await Week.findOne({ _id: weekId, userId });
         
         if (!week) {
             return res.json({
                 success: false,
                 message: "Week not found"
-            })
+            });
         }
 
-        const spendings = await Spending.find({ weekId }).sort({ createdAt: -1 })
+        const spendings = await Spending.find({ weekId }).sort({ createdAt: -1 });
 
         // Calculate total spent and remaining
-        const totalSpent = spendings.reduce((sum, spending) => sum + spending.amount, 0)
-        const remaining = week.totalAmount - totalSpent
+        const totalSpent = spendings.reduce((sum, spending) => sum + spending.amount, 0);
+        const remaining = week.totalAmount - totalSpent;
 
         return res.json({
             success: true,
             spendings,
+            totalSpent, // Add this
+            remaining,  // Add this
             weekInfo: {
                 weekName: week.weekName,
                 totalAmount: week.totalAmount,
                 totalSpent,
                 remaining
             }
-        })
+        });
     } catch (error) {
         return res.json({
             success: false,
             message: error.message
-        })
+        });
     }
-}
+};
 
 const getspendbyid=async (req, res) => {
     try {
@@ -222,4 +224,40 @@ const deletespend= async (req, res) => {
     }
 }
 
-export {addspend,getspend,getspendbyid,updatespend,deletespend}
+const getWeekSpendingTotals = async (req, res) => {
+    try {
+        const { userId, weekIds } = req.body;
+        
+        if (!userId) {
+            return res.json({
+                success: false,
+                message: "User ID is required"
+            });
+        }
+
+        const spendingTotals = [];
+        
+        // If specific weekIds provided, get totals for those weeks
+        if (weekIds && weekIds.length > 0) {
+            for (const weekId of weekIds) {
+                const spendings = await Spending.find({ weekId });
+                const totalSpent = spendings.reduce((sum, spending) => sum + spending.amount, 0);
+                spendingTotals.push({
+                    weekId,
+                    totalSpent
+                });
+            }
+        }
+
+        return res.json({
+            success: true,
+            spendingTotals
+        });
+    } catch (error) {
+        return res.json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+export {addspend,getspend,getspendbyid,updatespend,deletespend,getWeekSpendingTotals}
